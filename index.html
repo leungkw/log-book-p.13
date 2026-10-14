@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag and Drop: Diary Fill in the Blanks</title>
+    
+    <!-- Import Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Import Google Fonts: 'Caveat' for handwriting/diary feel, 'Nunito' for UI elements -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0f4f8;
+            background-image: url('https://www.transparenttextures.com/patterns/notebook-dark.png');
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .diary-text {
+            font-family: 'Caveat', cursive;
+            font-size: 1.6rem;
+            line-height: 2.2;
+            color: #2c3e50;
+        }
+
+        @media (min-width: 768px) {
+            .diary-text {
+                font-size: 1.85rem;
+                line-height: 2.4;
+            }
+        }
+
+        /* Styling for the draggable words */
+        .word-block {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #ffffff;
+            color: #3b82f6;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            cursor: grab;
+            user-select: none;
+            border: 2px solid #93c5fd;
+            transition: all 0.2s ease;
+            margin: 0.25rem;
+            touch-action: manipulation; /* Improves mobile tap behavior */
+        }
+
+        .word-block:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        .word-block.selected {
+            background-color: #dbeafe;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Styling for the drop zones (blanks) */
+        .drop-zone {
+            display: inline-block;
+            min-width: 120px;
+            min-height: 38px;
+            margin: 0 0.5rem;
+            padding: 0 0.25rem;
+            background-color: rgba(226, 232, 240, 0.5);
+            border-bottom: 3px dashed #94a3b8;
+            vertical-align: middle;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .drop-zone.drag-over {
+            background-color: #dbeafe;
+            border-bottom-color: #3b82f6;
+            transform: scale(1.05);
+        }
+
+        .drop-zone.has-word {
+            border-bottom: 3px solid transparent; /* Hide dash when filled */
+            background-color: transparent;
+            min-width: auto;
+        }
+
+        /* Number prefix style */
+        .blank-number {
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #475569;
+            margin-right: 0.2rem;
+            vertical-align: middle;
+        }
+
+        /* Correct/Incorrect state styles */
+        .word-block.correct {
+            background-color: #d1fae5 !important;
+            border-color: #10b981 !important;
+            color: #065f46 !important;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        /* Add a checkmark for correct answers */
+        .word-block.correct::after {
+            content: '✔';
+            margin-left: 0.5rem;
+            color: #10b981;
+            font-size: 1rem;
+        }
+
+        .word-block.incorrect {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            color: #991b1b !important;
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        /* Layout adjustments */
+        .diary-paper {
+            background-color: #fdfbf7;
+            background-image: repeating-linear-gradient(transparent, transparent 39px, #e2e8f0 39px, #e2e8f0 40px);
+            background-attachment: local;
+            border-radius: 8px;
+            box-shadow: -4px 4px 15px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .diary-paper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 40px;
+            width: 2px;
+            background-color: #fca5a5;
+            z-index: 0;
+        }
+        
+        .diary-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Ensure word block inside text aligns nicely */
+        .drop-zone .word-block {
+            margin: 0;
+            font-size: 1.2rem;
+            padding: 0.2rem 0.8rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4 md:px-8 flex flex-col items-center">
+
+    <div class="max-w-5xl w-full">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-blue-900 mb-2">School Tour Diary</h1>
+            <p class="text-gray-600 text-lg">
+                <strong>Instruction:</strong> Drag and drop the words into the correct blanks. <br>
+                <span class="text-sm md:text-base">(On mobile/tablet: Tap a word to select it, then tap an empty box to place it.)</span>
+            </p>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-6">
+            
+            <!-- Left Sidebar: Word Bank -->
+            <div class="lg:w-1/3 xl:w-1/4 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-md p-5 sticky top-4">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Word Bank</h2>
+                    <div id="word-bank" class="flex flex-wrap gap-2 min-h-[100px] p-2 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                        <!-- Words will be dynamically injected here by JS -->
+                    </div>
+                    
+                    <div class="mt-6 flex flex-col gap-3">
+                        <!-- Check Answers button is removed as checking is now immediate -->
+                        <button id="reset-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg shadow transition-colors duration-200 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            Reset
+                        </button>
+                    </div>
+                    
+                    <!-- Feedback Message -->
+                    <div id="feedback-message" class="mt-4 text-center font-bold text-lg hidden"></div>
+                </div>
+            </div>
+
+            <!-- Right Area: Diary Content -->
+            <div class="lg:w-2/3 xl:w-3/4">
+                <div class="diary-paper p-6 md:p-10 pl-16 md:pl-20">
+                    <div class="diary-content diary-text">
+                        <p class="mb-6">Dear Diary,</p>
+                        
+                        <p class="mb-6 indent-8">
+                            Today was exhausting! Our class teacher showed us around the school today. First, our class teacher checked our school 
+                            <span class="blank-number">(1)</span><span class="drop-zone" data-answer="uniforms" id="zone-1"></span> 
+                            in the home classroom. Our teacher said it is important to keep it tidy. There will be morning assemblies 
+                            <span class="blank-number">(2)</span><span class="drop-zone" data-answer="regularly" id="zone-2"></span>. 
+                            I was always late in primary school. I am a secondary school student now. It’s time for me to 
+                            <span class="blank-number">(3)</span><span class="drop-zone" data-answer="practice" id="zone-3"></span> 
+                            waking up on my own.
+                        </p>
+                        
+                        <p class="mb-6 indent-8">
+                            Our school has a 
+                            <span class="blank-number">(4)</span><span class="drop-zone" data-answer="tuck shop" id="zone-4"></span> 
+                            that sells snacks, but it doesn’t sell lunch. People mostly hang out and eat light snacks there. I like the fact that our school also has vending 
+                            <span class="blank-number">(5)</span><span class="drop-zone" data-answer="machines" id="zone-5"></span> 
+                            so that you don’t have to line up as long if you only want to buy a bottle of water. Our teacher reminded us that our school doesn’t have a 
+                            <span class="blank-number">(6)</span><span class="drop-zone" data-answer="canteen" id="zone-6"></span> 
+                            that sells lunch, so we must bring our own lunch.
+                        </p>
+                        
+                        <p class="mb-6 indent-8">
+                            Then, our teacher took us to the 
+                            <span class="blank-number">(7)</span><span class="drop-zone" data-answer="stairs" id="zone-7"></span>. 
+                            She said it is crucial that we know where it is so that we know our exit routes. We should not run on it. We went to the school hall next. It is magnificent because it is a 
+                            <span class="blank-number">(8)</span><span class="drop-zone" data-answer="historic" id="zone-8"></span> 
+                            building! It is very old but well-taken care of. Our school has three 
+                            <span class="blank-number">(9)</span><span class="drop-zone" data-answer="computer rooms" id="zone-9"></span> 
+                            which provide desktop computers, laptop computers and iPads for us to use. We will learn how to use different devices for different purposes.
+                        </p>
+                        
+                        <p class="indent-8">
+                            Last but not least, we went to the 
+                            <span class="blank-number">(10)</span><span class="drop-zone" data-answer="outdoor playground" id="zone-10"></span> 
+                            where we will have our P.E. lessons. P.E. lessons used to be my favourite subject, but it looks like there are more interesting subjects in secondary school! I hope the following year will be fabulous!
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        // Define the vocabulary words based on the answers
+        const vocabWords = [
+            "uniforms", 
+            "regularly", 
+            "practice", 
+            "tuck shop", 
+            "machines", 
+            "canteen", 
+            "stairs", 
+            "historic", 
+            "computer rooms", 
+            "outdoor playground"
+        ];
+
+        // DOM Elements
+        const wordBankEl = document.getElementById('word-bank');
+        const dropZones = document.querySelectorAll('.drop-zone');
+        // Check button removed
+        const resetBtn = document.getElementById('reset-btn');
+        const feedbackMsg = document.getElementById('feedback-message');
+
+        // State variables for Click-to-place (Mobile friendly)
+        let selectedWordEl = null;
+
+        // Initialize the game
+        function initGame() {
+            // Clear existing word bank and drop zones
+            wordBankEl.innerHTML = '';
+            dropZones.forEach(zone => {
+                zone.innerHTML = '';
+                zone.classList.remove('has-word');
+            });
+            feedbackMsg.classList.add('hidden');
+
+            // Shuffle words array (Fisher-Yates algorithm)
+            let shuffledWords = [...vocabWords];
+            for (let i = shuffledWords.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledWords[i], shuffledWords[j]] = [shuffledWords[j], shuffledWords[i]];
+            }
+
+            // Create word blocks
+            shuffledWords.forEach((word, index) => {
+                const wordDiv = document.createElement('div');
+                wordDiv.classList.add('word-block');
+                wordDiv.textContent = word;
+                wordDiv.setAttribute('draggable', 'true');
+                wordDiv.id = `word-${index}`;
+                
+                // Add Drag and Drop Events (For Desktop)
+                wordDiv.addEventListener('dragstart', handleDragStart);
+                wordDiv.addEventListener('dragend', handleDragEnd);
+                
+                // Add Click Event (For Mobile / Tap to Place)
+                wordDiv.addEventListener('click', handleWordClick);
+
+                wordBankEl.appendChild(wordDiv);
+            });
+
+            selectedWordEl = null;
+        }
+
+        // --- DRAG AND DROP API LOGIC ---
+        let draggedElement = null;
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            setTimeout(() => { this.style.opacity = '0.5'; }, 0);
+            
+            // Clear any tap-selection if a drag starts
+            if (selectedWordEl) {
+                selectedWordEl.classList.remove('selected');
+                selectedWordEl = null;
+            }
+        }
+
+        function handleDragEnd(e) {
+            this.style.opacity = '1';
+            dropZones.forEach(zone => zone.classList.remove('drag-over'));
+            draggedElement = null;
+        }
+
+        dropZones.forEach(zone => {
+            // Drag and Drop listeners
+            zone.addEventListener('dragover', handleDragOver);
+            zone.addEventListener('dragenter', handleDragEnter);
+            zone.addEventListener('dragleave', handleDragLeave);
+            zone.addEventListener('drop', handleDrop);
+            
+            // Click listener (Tap to Place)
+            zone.addEventListener('click', handleZoneClick);
+        });
+
+        // Also allow dropping back into the word bank
+        wordBankEl.addEventListener('dragover', handleDragOver);
+        wordBankEl.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (draggedElement) {
+                this.appendChild(draggedElement);
+                updateZoneStates();
+            }
+        });
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            if(this.classList.contains('drop-zone')) {
+                this.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            if(this.classList.contains('drop-zone')) {
+                this.classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            this.classList.remove('drag-over');
+
+            if (draggedElement) {
+                placeWordInZone(draggedElement, this);
+            }
+            return false;
+        }
+
+        // --- CLICK / TAP TO PLACE LOGIC (MOBILE FRIENDLY) ---
+        function handleWordClick(e) {
+            // Prevent clicking if the word is already marked correct
+            if (this.classList.contains('correct')) return;
+
+            e.stopPropagation(); // Prevent bubbling
+
+            // If clicking the already selected word, deselect it
+            if (selectedWordEl === this) {
+                this.classList.remove('selected');
+                selectedWordEl = null;
+                return;
+            }
+
+            // Deselect previous
+            if (selectedWordEl) {
+                selectedWordEl.classList.remove('selected');
+            }
+
+            // Select new
+            selectedWordEl = this;
+            this.classList.add('selected');
+        }
+
+        function handleZoneClick(e) {
+            // If we have a selected word and click a zone, place it
+            if (selectedWordEl) {
+                placeWordInZone(selectedWordEl, this);
+                selectedWordEl.classList.remove('selected');
+                selectedWordEl = null;
+            } else if (this.children.length > 0) {
+                // If clicking a filled zone without a selection, return the word to the bank
+                const wordToReturn = this.children[0];
+                if (!wordToReturn.classList.contains('correct')) {
+                    wordToReturn.classList.remove('incorrect');
+                    wordBankEl.appendChild(wordToReturn);
+                    updateZoneStates();
+                }
+            }
+        }
+
+        // Click on word bank background returns selected word (if in a zone)
+        wordBankEl.addEventListener('click', function(e) {
+            if (e.target === this && selectedWordEl && selectedWordEl.parentElement.classList.contains('drop-zone')) {
+                this.appendChild(selectedWordEl);
+                selectedWordEl.classList.remove('selected');
+                selectedWordEl = null;
+                updateZoneStates();
+            }
+        });
+
+        // --- HELPER FUNCTIONS ---
+        function placeWordInZone(wordEl, targetZone) {
+            // If the zone already has a word, swap it back to the word bank
+            if (targetZone.children.length > 0) {
+                const existingWord = targetZone.children[0];
+                if (!existingWord.classList.contains('correct')) {
+                    existingWord.classList.remove('incorrect');
+                    wordBankEl.appendChild(existingWord);
+                } else {
+                    return; // Don't replace a correct answer
+                }
+            }
+
+            // Remove any error classes if moved
+            wordEl.classList.remove('incorrect');
+            
+            // Append word to the zone temporarily to check
+            targetZone.appendChild(wordEl);
+            updateZoneStates();
+            
+            // Immediate check logic
+            checkImmediateAnswer(wordEl, targetZone);
+        }
+
+        function checkImmediateAnswer(wordEl, targetZone) {
+            const correctAnswer = targetZone.getAttribute('data-answer');
+            const studentAnswer = wordEl.textContent;
+
+            if (studentAnswer === correctAnswer) {
+                // Correct answer
+                wordEl.classList.remove('incorrect');
+                wordEl.classList.add('correct');
+                wordEl.setAttribute('draggable', 'false'); // Lock correct answers
+                
+                // Check if all are complete
+                checkAllComplete();
+            } else {
+                // Incorrect answer
+                wordEl.classList.remove('correct');
+                
+                // Trigger shake animation and visual feedback
+                wordEl.classList.add('incorrect');
+                
+                // Keep it in the zone briefly so the user sees the error, then return it
+                setTimeout(() => {
+                    wordEl.classList.remove('incorrect');
+                    wordBankEl.appendChild(wordEl);
+                    updateZoneStates();
+                }, 800); // 800ms gives enough time for the shake animation to finish
+            }
+        }
+
+        function checkAllComplete() {
+            let correctCount = 0;
+            dropZones.forEach(zone => {
+                if (zone.children.length > 0 && zone.children[0].classList.contains('correct')) {
+                    correctCount++;
+                }
+            });
+
+            if (correctCount === vocabWords.length) {
+                feedbackMsg.classList.remove('hidden', 'text-red-500', 'text-blue-600');
+                feedbackMsg.textContent = "🎉 Fantastic job! You got everything right!";
+                feedbackMsg.classList.add('text-green-600');
+            }
+        }
+
+        function updateZoneStates() {
+            dropZones.forEach(zone => {
+                if (zone.children.length > 0) {
+                    zone.classList.add('has-word');
+                } else {
+                    zone.classList.remove('has-word');
+                }
+            });
+        }
+
+        // --- CHECKING ANSWERS ---
+        // Manual check button logic removed as it's now automated
+
+        // Reset Button
+        resetBtn.addEventListener('click', initGame);
+
+        // Run setup on load
+        window.onload = initGame;
+    </script>
+</body>
+</html>
