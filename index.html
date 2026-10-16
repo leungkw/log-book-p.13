@@ -3,536 +3,574 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drag and Drop: Diary Fill in the Blanks</title>
+    <title>Wh-questions Matching</title>
     
-    <!-- Import Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Import Google Fonts: 'Caveat' for handwriting/diary feel, 'Nunito' for UI elements -->
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         body {
             font-family: 'Nunito', sans-serif;
-            background-color: #f0f4f8;
-            background-image: url('https://www.transparenttextures.com/patterns/notebook-dark.png');
-            color: #333;
+            background-color: #f0f9ff;
+            touch-action: pan-y;
             overflow-x: hidden;
         }
 
-        .diary-text {
-            font-family: 'Caveat', cursive;
-            font-size: 1.6rem;
-            line-height: 2.2;
-            color: #2c3e50;
-        }
-
-        @media (min-width: 768px) {
-            .diary-text {
-                font-size: 1.85rem;
-                line-height: 2.4;
-            }
-        }
-
-        /* Styling for the draggable words */
-        .word-block {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #ffffff;
-            color: #3b82f6;
-            font-family: 'Nunito', sans-serif;
-            font-weight: 700;
-            font-size: 1.1rem;
-            padding: 0.4rem 1rem;
-            border-radius: 9999px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            cursor: grab;
-            user-select: none;
-            border: 2px solid #93c5fd;
-            transition: all 0.2s ease;
-            margin: 0.25rem;
-            touch-action: manipulation; /* Improves mobile tap behavior */
-        }
-
-        .word-block:active {
-            cursor: grabbing;
-            transform: scale(0.95);
-        }
-
-        .word-block.selected {
-            background-color: #dbeafe;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-            transform: translateY(-2px);
-        }
-
-        /* Styling for the drop zones (blanks) */
-        .drop-zone {
-            display: inline-block;
-            min-width: 120px;
-            min-height: 38px;
-            margin: 0 0.5rem;
-            padding: 0 0.25rem;
-            background-color: rgba(226, 232, 240, 0.5);
-            border-bottom: 3px dashed #94a3b8;
-            vertical-align: middle;
-            border-radius: 4px;
-            transition: all 0.3s ease;
+        .node {
+            width: 20px;
+            height: 20px;
+            background-color: #1e293b;
+            border-radius: 50%;
             cursor: pointer;
-            text-align: center;
-        }
-
-        .drop-zone.drag-over {
-            background-color: #dbeafe;
-            border-bottom-color: #3b82f6;
-            transform: scale(1.05);
-        }
-
-        .drop-zone.has-word {
-            border-bottom: 3px solid transparent; /* Hide dash when filled */
-            background-color: transparent;
-            min-width: auto;
-        }
-
-        /* Number prefix style */
-        .blank-number {
-            font-family: 'Nunito', sans-serif;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #475569;
-            margin-right: 0.2rem;
-            vertical-align: middle;
-        }
-
-        /* Correct/Incorrect state styles */
-        .word-block.correct {
-            background-color: #d1fae5 !important;
-            border-color: #10b981 !important;
-            color: #065f46 !important;
-            pointer-events: none;
-            box-shadow: none;
-        }
-
-        /* Add a checkmark for correct answers */
-        .word-block.correct::after {
-            content: '✔';
-            margin-left: 0.5rem;
-            color: #10b981;
-            font-size: 1rem;
-        }
-
-        .word-block.incorrect {
-            background-color: #fee2e2 !important;
-            border-color: #ef4444 !important;
-            color: #991b1b !important;
-            animation: shake 0.4s ease-in-out;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
-        }
-
-        /* Layout adjustments */
-        .diary-paper {
-            background-color: #fdfbf7;
-            background-image: repeating-linear-gradient(transparent, transparent 39px, #e2e8f0 39px, #e2e8f0 40px);
-            background-attachment: local;
-            border-radius: 8px;
-            box-shadow: -4px 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.2s, background-color 0.2s;
             position: relative;
+            z-index: 10;
+            touch-action: none;
+        }
+        .node:hover { transform: scale(1.3); background-color: #3b82f6; }
+        .node.connected { background-color: #10b981; }
+        .node.active { background-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3); }
+
+        #svg-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;
         }
 
-        .diary-paper::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 40px;
-            width: 2px;
-            background-color: #fca5a5;
-            z-index: 0;
-        }
+        .line-temp { stroke: #3b82f6; stroke-width: 3; stroke-dasharray: 6; animation: dash 1s linear infinite; }
+        .line-correct { stroke: #10b981; stroke-width: 4; transition: all 0.3s ease; }
+        .line-error { stroke: #ef4444; stroke-width: 4; animation: shakeLine 0.4s ease-in-out; }
+
+        @keyframes dash { to { stroke-dashoffset: -12; } }
+
+        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         
-        .diary-content {
-            position: relative;
-            z-index: 1;
-        }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .shake { animation: shake 0.3s ease-in-out; }
 
-        /* Ensure word block inside text aligns nicely */
-        .drop-zone .word-block {
-            margin: 0;
-            font-size: 1.2rem;
-            padding: 0.2rem 0.8rem;
+        .p3-blank {
+            display: inline-block;
+            min-width: 100px;
+            border-bottom: 2px solid #6b7280; /* Gray-500 */
+            text-align: center;
+            color: transparent;
+            transition: color 0.3s ease;
+            padding: 0 8px;
+            cursor: pointer;
+            margin: 0 4px;
         }
-
-        /* Ensure the word bank has enough height to display words without scrolling */
-        #word-bank {
-            min-height: 150px; /* Increased min-height */
-            max-height: 50vh; /* Set a maximum height relative to viewport */
-            overflow-y: auto; /* Allow scrolling if it still overflows on very small screens */
+        .p3-blank.revealed {
+            color: #dc2626; /* Red-600 */
+            font-weight: bold;
+            font-family: 'Comic Sans MS', 'Nunito', sans-serif;
         }
+        .w-200 { min-width: 250px; }
+        .w-300 { min-width: 350px; }
     </style>
 </head>
-<body class="min-h-screen py-8 px-4 md:px-8 flex flex-col items-center">
+<body class="min-h-screen flex flex-col items-center py-6 px-2 md:px-8">
 
-    <div class="max-w-5xl w-full">
-        <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-extrabold text-blue-900 mb-2">School Tour Diary</h1>
-            <p class="text-gray-600 text-lg">
-                <strong>Instruction:</strong> Drag and drop the words into the correct blanks. <br>
-                <span class="text-sm md:text-base">(On mobile/tablet: Tap a word to select it, then tap an empty box to place it.)</span>
-            </p>
-        </header>
+    <div class="flex flex-wrap md:flex-nowrap space-y-2 md:space-y-0 md:space-x-2 mb-0 w-full max-w-5xl px-2 md:px-6 relative z-10 translate-y-1">
+        <button id="tab-p1" onclick="switchTab('p1')" class="flex-1 py-3 md:py-4 px-2 md:px-4 bg-blue-500 text-white font-extrabold text-sm md:text-xl rounded-t-2xl shadow-md transition-all">
+            Practice 1: Matching
+        </button>
+        <button id="tab-p2" onclick="switchTab('p2')" class="flex-1 py-3 md:py-4 px-2 md:px-4 bg-gray-200 text-gray-500 font-extrabold text-sm md:text-xl rounded-t-2xl shadow-inner transition-all hover:bg-indigo-100 hover:text-indigo-500">
+            Practice 2: Fill in the Blanks
+        </button>
+        <button id="tab-p3" onclick="switchTab('p3')" class="flex-1 py-3 md:py-4 px-2 md:px-4 bg-gray-200 text-gray-500 font-extrabold text-sm md:text-xl rounded-t-2xl shadow-inner transition-all hover:bg-teal-100 hover:text-teal-500">
+            Practice 3: Conversation
+        </button>
+    </div>
 
-        <div class="flex flex-col lg:flex-row gap-6">
-            
-            <!-- Left Sidebar: Word Bank -->
-            <div class="lg:w-1/3 xl:w-1/4 flex-shrink-0">
-                <div class="bg-white rounded-xl shadow-md p-5 sticky top-4">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Word Bank</h2>
-                    <!-- Adjusted padding and gap for better word fitting -->
-                    <div id="word-bank" class="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                        <!-- Words will be dynamically injected here by JS -->
-                    </div>
-                    
-                    <div class="mt-6 flex flex-col gap-3">
-                        <!-- Check Answers button is removed as checking is now immediate -->
-                        <button id="reset-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg shadow transition-colors duration-200 flex items-center justify-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                            Reset
-                        </button>
-                    </div>
-                    
-                    <!-- Feedback Message -->
-                    <div id="feedback-message" class="mt-4 text-center font-bold text-lg hidden"></div>
+    <main class="w-full max-w-5xl bg-white rounded-3xl shadow-xl border-4 border-blue-200 relative overflow-hidden z-20">
+        
+        <div id="section-p1" class="block">
+            <div class="absolute top-4 right-4 bg-yellow-300 text-yellow-900 px-3 py-1 rounded-full font-bold text-xs md:text-sm shadow-sm z-20 border border-yellow-400">
+                GRAMMARBOOK P.24 PRACTICE 1
+            </div>
+
+            <div class="bg-blue-50 px-6 py-8 border-b border-blue-100 relative">
+                <div class="flex items-center gap-2 mb-2 text-blue-500 font-bold text-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+                    Wh-questions
+                </div>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-blue-900 bg-blue-200 inline-block px-4 py-1 rounded-full mb-4">Form & Usage</h1>
+                
+                <div class="flex items-center gap-3 text-xl md:text-2xl text-blue-800 font-bold mt-2">
+                    <span class="bg-blue-500 text-white w-8 h-8 flex items-center justify-center rounded-full text-base shadow">1</span>
+                    Match the answers to the correct questions.
                 </div>
             </div>
 
-            <!-- Right Area: Diary Content -->
-            <div class="lg:w-2/3 xl:w-3/4">
-                <div class="diary-paper p-6 md:p-10 pl-16 md:pl-20">
-                    <div class="diary-content diary-text">
-                        <p class="mb-6">Dear Diary,</p>
-                        
-                        <p class="mb-6 indent-8">
-                            Today was exhausting! Our class teacher showed us around the school today. First, our class teacher checked our school 
-                            <span class="blank-number">(1)</span><span class="drop-zone" data-answer="uniforms" id="zone-1"></span> 
-                            in the home classroom. Our teacher said it is important to keep it tidy. There will be morning assemblies 
-                            <span class="blank-number">(2)</span><span class="drop-zone" data-answer="regularly" id="zone-2"></span>. 
-                            I was always late in primary school. I am a secondary school student now. It’s time for me to 
-                            <span class="blank-number">(3)</span><span class="drop-zone" data-answer="practice" id="zone-3"></span> 
-                            waking up on my own.
-                        </p>
-                        
-                        <p class="mb-6 indent-8">
-                            Our school has a 
-                            <span class="blank-number">(4)</span><span class="drop-zone" data-answer="tuck shop" id="zone-4"></span> 
-                            that sells snacks, but it doesn’t sell lunch. People mostly hang out and eat light snacks there. I like the fact that our school also has vending 
-                            <span class="blank-number">(5)</span><span class="drop-zone" data-answer="machines" id="zone-5"></span> 
-                            so that you don’t have to line up as long if you only want to buy a bottle of water. Our teacher reminded us that our school doesn’t have a 
-                            <span class="blank-number">(6)</span><span class="drop-zone" data-answer="canteen" id="zone-6"></span> 
-                            that sells lunch, so we must bring our own lunch.
-                        </p>
-                        
-                        <p class="mb-6 indent-8">
-                            Then, our teacher took us to the 
-                            <span class="blank-number">(7)</span><span class="drop-zone" data-answer="stairs" id="zone-7"></span>. 
-                            She said it is crucial that we know where it is so that we know our exit routes. We should not run on it. We went to the school hall next. It is magnificent because it is a 
-                            <span class="blank-number">(8)</span><span class="drop-zone" data-answer="historic" id="zone-8"></span> 
-                            building! It is very old but well-taken care of. Our school has three 
-                            <span class="blank-number">(9)</span><span class="drop-zone" data-answer="computer rooms" id="zone-9"></span> 
-                            which provide desktop computers, laptop computers and iPads for us to use. We will learn how to use different devices for different purposes.
-                        </p>
-                        
-                        <p class="indent-8">
-                            Last but not least, we went to the 
-                            <span class="blank-number">(10)</span><span class="drop-zone" data-answer="outdoor playground" id="zone-10"></span> 
-                            where we will have our P.E. lessons. P.E. lessons used to be my favourite subject, but it looks like there are more interesting subjects in secondary school! I hope the following year will be fabulous!
-                        </p>
-                    </div>
+            <div id="game-area" class="relative p-4 md:p-8 w-full min-h-[500px]">
+                <svg id="svg-container"></svg>
+                <div class="flex justify-between w-full h-full relative z-10 gap-4">
+                    <div id="questions-list" class="flex flex-col gap-6 w-1/2 md:w-5/12"></div>
+                    <div id="answers-list" class="flex flex-col gap-6 w-1/2 md:w-5/12"></div>
                 </div>
             </div>
-            
+        </div>
+
+        <div id="section-p2" class="hidden">
+            <div class="absolute top-4 right-4 bg-yellow-300 text-yellow-900 px-3 py-1 rounded-full font-bold text-xs md:text-sm shadow-sm z-20 border border-yellow-400">
+                GRAMMARBOOK P.24 PRACTICE 2
+            </div>
+
+            <div class="bg-indigo-50 px-6 py-8 border-b border-indigo-100 relative">
+                <div class="flex items-center gap-2 mb-2 text-indigo-500 font-bold text-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+                    Wh-questions
+                </div>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-indigo-900 bg-indigo-200 inline-block px-4 py-1 rounded-full mb-4">Form & Usage</h1>
+                
+                <div class="flex items-center gap-3 text-xl md:text-2xl text-indigo-800 font-bold mt-2">
+                    <span class="bg-indigo-500 text-white w-8 h-8 flex items-center justify-center rounded-full text-base shadow">2</span>
+                    Fill in the blanks with the correct 'Wh'-words in the box.
+                </div>
+            </div>
+
+            <div class="bg-indigo-100 p-4 sticky top-0 z-30 shadow-sm flex justify-center flex-wrap gap-3" id="word-bank">
+                <!-- Word bank populated by JS -->
+            </div>
+
+            <div id="p2-game-area" class="relative p-6 md:p-8 w-full min-h-[400px]">
+                <div id="sentences-list" class="flex flex-col gap-6 w-full text-lg md:text-xl text-gray-800 font-medium">
+                    <!-- Sentences populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <div id="section-p3" class="hidden pb-12">
+            <div class="absolute top-4 right-4 bg-yellow-300 text-yellow-900 px-3 py-1 rounded-full font-bold text-xs md:text-sm shadow-sm z-20 border border-yellow-400">
+                GRAMMARBOOK P.24 - 25 PRACTICE 3
+            </div>
+
+            <div class="bg-teal-50 px-6 py-8 border-b border-teal-100 relative">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2 text-teal-600 font-bold text-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                            Grammar in Use
+                        </div>
+                        
+                        <div class="flex items-start gap-3 text-xl md:text-2xl text-teal-800 font-bold mt-2">
+                            <span class="bg-teal-500 text-white w-8 h-8 flex items-center justify-center rounded-full text-base shadow flex-shrink-0 mt-1">3</span>
+                            <span class="leading-relaxed">You meet Jason at the school basketball court. Read the conversation and fill in the blanks with the correct 'Wh'-words.</span>
+                        </div>
+                    </div>
+                    <!-- ANS Button -->
+                    <button id="ans-btn" onclick="toggleP3Answers()" class="ml-4 flex-shrink-0 bg-red-500 hover:bg-red-600 text-white font-extrabold text-xl py-2 px-8 rounded-full shadow-lg border-2 border-red-700 transition-transform active:scale-95">
+                        ANS
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 md:p-10 w-full">
+                <div id="conversation-list" class="flex flex-col gap-5 text-lg md:text-xl text-gray-800 font-medium max-w-4xl mx-auto">
+                    <!-- Conversation populated by JS -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="victory-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl transform scale-0 transition-transform duration-300" id="victory-content">
+            <div class="text-7xl mb-4">🎉</div>
+            <h2 class="text-3xl font-extrabold text-green-600 mb-2">Excellent!</h2>
+            <p class="text-gray-600 mb-6 font-bold text-lg">You have successfully completed the practice!</p>
+            <button onclick="resetGame()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold text-xl py-3 px-8 rounded-full shadow-lg transition-transform hover:scale-105 w-full">
+                Play Again
+            </button>
         </div>
     </div>
 
     <script>
-        // Define the vocabulary words based on the answers
-        const vocabWords = [
-            "uniforms", 
-            "regularly", 
-            "practice", 
-            "tuck shop", 
-            "machines", 
-            "canteen", 
-            "stairs", 
-            "historic", 
-            "computer rooms", 
-            "outdoor playground"
+        // Practice 1 Data
+        const questionsData = [
+            { id: 'q1', num: '1', text: 'When do you leave school every day?', matchId: 'a7' },
+            { id: 'q2', num: '2', text: 'What is the colour of your new jacket?', matchId: 'a5' },
+            { id: 'q3', num: '3', text: 'Which restaurant do you prefer?', matchId: 'a6' },
+            { id: 'q4', num: '4', text: 'What do you want for a birthday present?', matchId: 'a2' },
+            { id: 'q5', num: '5', text: 'Where do you keep your pocket money?', matchId: 'a4' },
+            { id: 'q6', num: '6', text: 'Who is your class teacher this year?', matchId: 'a3' },
+            { id: 'q7', num: '7', text: 'Why do you keep a pet dog?', matchId: 'a1' }
         ];
 
-        // DOM Elements
-        const wordBankEl = document.getElementById('word-bank');
-        const dropZones = document.querySelectorAll('.drop-zone');
-        // Check button removed
-        const resetBtn = document.getElementById('reset-btn');
-        const feedbackMsg = document.getElementById('feedback-message');
+        const answersData = [
+            { id: 'a1', text: "Because it's cute." },
+            { id: 'a2', text: "A watch." },
+            { id: 'a3', text: "Mr Lee." },
+            { id: 'a4', text: "In a piggy bank." },
+            { id: 'a5', text: "Yellow." },
+            { id: 'a6', text: "The Chinese one." },
+            { id: 'a7', text: "At 4.30 p.m." }
+        ];
 
-        // State variables for Click-to-place (Mobile friendly)
-        let selectedWordEl = null;
+        // Practice 2 Data
+        const p2Words = ['how', 'what', 'who', 'which', 'when', 'where', 'why'];
+        const p2Sentences = [
+            { id: 's1', num: '1', parts: ["There are no more giraffes in this zoo. ", "BLANK_where", " are they now?"] },
+            { id: 's2', num: '2', parts: ["BLANK_what", " does Sue like? I need to buy her a birthday present."] },
+            { id: 's3', num: '3', parts: ["BLANK_when", " is Mum's birthday? Is it next week?"] },
+            { id: 's4', num: '4', parts: ["I'm not good at Mathematics. ", "BLANK_how", " do you do this calculation?"] },
+            { id: 's5', num: '5', parts: ["BLANK_which", " character do you like most in this film?"] },
+            { id: 's6', num: '6', parts: ["BLANK_who", " is your role model? ", "BLANK_what", " do you learn from him/her?"] },
+            { id: 's7', num: '7', parts: ["BLANK_why", " does your brother study Chemistry in university? Is it because he wants to become a scientist?"] },
+            { id: 's8', num: '8', parts: ["It's already 10 a.m. ", "BLANK_when", " does the tuck shop open?"] }
+        ];
 
-        // Initialize the game
+        // Practice 3 Data
+        const p3Conversation = [
+            { speaker: "You", text: "Hi Jason. (1) <span class='p3-blank' data-ans='How' onclick='revealSingle(this)'>How</span> are you?" },
+            { speaker: "Jason", text: "I'm fine. Thanks! (2) <span class='p3-blank' data-ans='What' onclick='revealSingle(this)'>What</span> are you doing here?" },
+            { speaker: "You", text: "I'm waiting for Katherine." },
+            { speaker: "Jason", text: "(3) <span class='p3-blank w-200' data-ans='Where is Katherine/she?' onclick='revealSingle(this)'>Where is Katherine/she?</span>" },
+            { speaker: "You", text: "She's in the library." },
+            { speaker: "Jason", text: "(4) <span class='p3-blank w-300' data-ans='Why is Katherine/she in the library?' onclick='revealSingle(this)'>Why is Katherine/she in the library?</span>" },
+            { speaker: "You", text: "She's in the library because she has to borrow some books for the History project." },
+            { speaker: "Jason", text: "I see." },
+            { speaker: "You", text: "(5) <span class='p3-blank w-300' data-ans='What are you having for lunch?' onclick='revealSingle(this)'>What are you having for lunch?</span>" },
+            { speaker: "Jason", text: "I'm having my favourite home-made garlic bread for lunch." },
+            { speaker: "You", text: "Looks delicious! By the way, (6) <span class='p3-blank w-200' data-ans='which school clubs' onclick='revealSingle(this)'>which school clubs</span> are you in this year?" },
+            { speaker: "Jason", text: "I'm in the Science Club and the English Debating Society. And you?" },
+            { speaker: "You", text: "I'm in the Science Club too! (7) <span class='p3-blank' data-ans='When' onclick='revealSingle(this)'>When</span> and (8) <span class='p3-blank' data-ans='where' onclick='revealSingle(this)'>where</span> is the regular meeting?" },
+            { speaker: "Jason", text: "Every Monday after school, in the Science Lab." },
+            { speaker: "You", text: "(9) <span class='p3-blank' data-ans='Which' onclick='revealSingle(this)'>Which</span> floor is the Science Lab on? Is it on the fourth floor?" },
+            { speaker: "Jason", text: "Yes, it's next to the library." },
+            { speaker: "You", text: "OK. (10) <span class='p3-blank' data-ans='Who' onclick='revealSingle(this)'>Who</span> else is coming?" },
+            { speaker: "Jason", text: "Timothy and Harriet. They're also in the club." },
+            { speaker: "You", text: "Great! See you all on Monday then." }
+        ];
+
+        let p2Completed = 0;
+        const p2TotalBlanks = 9;
+        let currentActiveTab = 'p1';
+        let isP3Revealed = false;
+
+        let isDrawing = false;
+        let startNode = null;
+        let tempLine = null;
+        let completedPairs = 0;
+        let connections = [];
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSFX(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            if (type === 'pop') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'correct') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(600, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'win') {
+                [440, 554, 659, 880].forEach((f, i) => {
+                    setTimeout(() => {
+                        const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination);
+                        g.gain.setValueAtTime(0.2, audioCtx.currentTime); g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
+                        o.start(); o.stop(audioCtx.currentTime + 0.4);
+                    }, i * 100);
+                });
+            }
+        }
+
         function initGame() {
-            // Clear existing word bank and drop zones
-            wordBankEl.innerHTML = '';
-            dropZones.forEach(zone => {
-                zone.innerHTML = '';
-                zone.classList.remove('has-word');
-            });
-            feedbackMsg.classList.add('hidden');
+            const questionsList = document.getElementById('questions-list');
+            const answersList = document.getElementById('answers-list');
+            const svgContainer = document.getElementById('svg-container');
+            
+            questionsList.innerHTML = ''; answersList.innerHTML = ''; svgContainer.innerHTML = '';
+            connections = []; completedPairs = 0;
 
-            // Shuffle words array (Fisher-Yates algorithm)
-            let shuffledWords = [...vocabWords];
-            for (let i = shuffledWords.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffledWords[i], shuffledWords[j]] = [shuffledWords[j], shuffledWords[i]];
-            }
-
-            // Create word blocks
-            shuffledWords.forEach((word, index) => {
-                const wordDiv = document.createElement('div');
-                wordDiv.classList.add('word-block');
-                wordDiv.textContent = word;
-                wordDiv.setAttribute('draggable', 'true');
-                wordDiv.id = `word-${index}`;
-                
-                // Add Drag and Drop Events (For Desktop)
-                wordDiv.addEventListener('dragstart', handleDragStart);
-                wordDiv.addEventListener('dragend', handleDragEnd);
-                
-                // Add Click Event (For Mobile / Tap to Place)
-                wordDiv.addEventListener('click', handleWordClick);
-
-                wordBankEl.appendChild(wordDiv);
+            questionsData.forEach(q => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between min-h-[40px] md:min-h-[48px]';
+                row.innerHTML = `
+                    <div class="text-base md:text-xl font-semibold text-gray-800 flex-1 pr-2 md:pr-4 flex items-start">
+                        <span class="mr-2 font-bold">${q.num}</span><span>${q.text}</span>
+                    </div>
+                    <div class="node left-node shadow-md" data-id="${q.id}" data-type="question" id="node-${q.id}"></div>
+                `;
+                questionsList.appendChild(row);
             });
 
-            selectedWordEl = null;
+            answersData.forEach(a => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-start min-h-[40px] md:min-h-[48px]';
+                row.innerHTML = `
+                    <div class="node right-node shadow-md flex-shrink-0" data-id="${a.id}" data-type="answer" id="node-${a.id}"></div>
+                    <div class="text-base md:text-xl font-semibold text-gray-800 ml-4 md:ml-8">${a.text}</div>
+                `;
+                answersList.appendChild(row);
+            });
+            attachNodeListeners();
         }
 
-        // --- DRAG AND DROP API LOGIC ---
-        let draggedElement = null;
-
-        function handleDragStart(e) {
-            draggedElement = this;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', this.innerHTML);
-            setTimeout(() => { this.style.opacity = '0.5'; }, 0);
+        function attachNodeListeners() {
+            const nodes = document.querySelectorAll('.node');
+            const gameArea = document.getElementById('game-area');
+            const svgContainer = document.getElementById('svg-container');
             
-            // Clear any tap-selection if a drag starts
-            if (selectedWordEl) {
-                selectedWordEl.classList.remove('selected');
-                selectedWordEl = null;
-            }
+            nodes.forEach(node => {
+                node.addEventListener('pointerdown', (e) => {
+                    if (node.classList.contains('connected')) return;
+                    isDrawing = true; startNode = node; startNode.classList.add('active'); playSFX('pop');
+                    tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    tempLine.classList.add('line-temp'); svgContainer.appendChild(tempLine);
+                    updateLinePosition(e, gameArea); node.setPointerCapture(e.pointerId);
+                });
+                node.addEventListener('pointermove', (e) => { if (isDrawing && tempLine) updateLinePosition(e, gameArea); });
+                node.addEventListener('pointerup', (e) => {
+                    if (!isDrawing) return;
+                    isDrawing = false; startNode.classList.remove('active'); node.releasePointerCapture(e.pointerId);
+                    const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
+                    if (dropTarget && dropTarget.classList.contains('node') && dropTarget !== startNode) checkMatch(startNode, dropTarget, gameArea);
+                    else if (tempLine) tempLine.remove();
+                    tempLine = null; startNode = null;
+                });
+            });
         }
 
-        function handleDragEnd(e) {
-            this.style.opacity = '1';
-            dropZones.forEach(zone => zone.classList.remove('drag-over'));
-            draggedElement = null;
+        function updateLinePosition(e, gameArea) {
+            const gameRect = gameArea.getBoundingClientRect(); const startRect = startNode.getBoundingClientRect();
+            tempLine.setAttribute('x1', startRect.left - gameRect.left + (startRect.width / 2));
+            tempLine.setAttribute('y1', startRect.top - gameRect.top + (startRect.height / 2));
+            tempLine.setAttribute('x2', e.clientX - gameRect.left); tempLine.setAttribute('y2', e.clientY - gameRect.top);
         }
 
-        dropZones.forEach(zone => {
-            // Drag and Drop listeners
-            zone.addEventListener('dragover', handleDragOver);
-            zone.addEventListener('dragenter', handleDragEnter);
-            zone.addEventListener('dragleave', handleDragLeave);
-            zone.addEventListener('drop', handleDrop);
+        function checkMatch(nodeA, nodeB, gameArea) {
+            if (nodeA.dataset.type === nodeB.dataset.type) { if (tempLine) tempLine.remove(); return; }
+            const qNode = nodeA.dataset.type === 'question' ? nodeA : nodeB;
+            const aNode = nodeA.dataset.type === 'answer' ? nodeA : nodeB;
             
-            // Click listener (Tap to Place)
-            zone.addEventListener('click', handleZoneClick);
-        });
-
-        // Also allow dropping back into the word bank
-        wordBankEl.addEventListener('dragover', handleDragOver);
-        wordBankEl.addEventListener('drop', function(e) {
-            e.preventDefault();
-            if (draggedElement) {
-                this.appendChild(draggedElement);
-                updateZoneStates();
-            }
-        });
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            return false;
-        }
-
-        function handleDragEnter(e) {
-            e.preventDefault();
-            if(this.classList.contains('drop-zone')) {
-                this.classList.add('drag-over');
-            }
-        }
-
-        function handleDragLeave(e) {
-            if(this.classList.contains('drop-zone')) {
-                this.classList.remove('drag-over');
-            }
-        }
-
-        function handleDrop(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            this.classList.remove('drag-over');
-
-            if (draggedElement) {
-                placeWordInZone(draggedElement, this);
-            }
-            return false;
-        }
-
-        // --- CLICK / TAP TO PLACE LOGIC (MOBILE FRIENDLY) ---
-        function handleWordClick(e) {
-            // Prevent clicking if the word is already marked correct
-            if (this.classList.contains('correct')) return;
-
-            e.stopPropagation(); // Prevent bubbling
-
-            // If clicking the already selected word, deselect it
-            if (selectedWordEl === this) {
-                this.classList.remove('selected');
-                selectedWordEl = null;
-                return;
-            }
-
-            // Deselect previous
-            if (selectedWordEl) {
-                selectedWordEl.classList.remove('selected');
-            }
-
-            // Select new
-            selectedWordEl = this;
-            this.classList.add('selected');
-        }
-
-        function handleZoneClick(e) {
-            // If we have a selected word and click a zone, place it
-            if (selectedWordEl) {
-                placeWordInZone(selectedWordEl, this);
-                selectedWordEl.classList.remove('selected');
-                selectedWordEl = null;
-            } else if (this.children.length > 0) {
-                // If clicking a filled zone without a selection, return the word to the bank
-                const wordToReturn = this.children[0];
-                if (!wordToReturn.classList.contains('correct')) {
-                    wordToReturn.classList.remove('incorrect');
-                    wordBankEl.appendChild(wordToReturn);
-                    updateZoneStates();
-                }
-            }
-        }
-
-        // Click on word bank background returns selected word (if in a zone)
-        wordBankEl.addEventListener('click', function(e) {
-            if (e.target === this && selectedWordEl && selectedWordEl.parentElement.classList.contains('drop-zone')) {
-                this.appendChild(selectedWordEl);
-                selectedWordEl.classList.remove('selected');
-                selectedWordEl = null;
-                updateZoneStates();
-            }
-        });
-
-        // --- HELPER FUNCTIONS ---
-        function placeWordInZone(wordEl, targetZone) {
-            // If the zone already has a word, swap it back to the word bank
-            if (targetZone.children.length > 0) {
-                const existingWord = targetZone.children[0];
-                if (!existingWord.classList.contains('correct')) {
-                    existingWord.classList.remove('incorrect');
-                    wordBankEl.appendChild(existingWord);
-                } else {
-                    return; // Don't replace a correct answer
-                }
-            }
-
-            // Remove any error classes if moved
-            wordEl.classList.remove('incorrect');
-            
-            // Append word to the zone temporarily to check
-            targetZone.appendChild(wordEl);
-            updateZoneStates();
-            
-            // Immediate check logic
-            checkImmediateAnswer(wordEl, targetZone);
-        }
-
-        function checkImmediateAnswer(wordEl, targetZone) {
-            const correctAnswer = targetZone.getAttribute('data-answer');
-            const studentAnswer = wordEl.textContent;
-
-            if (studentAnswer === correctAnswer) {
-                // Correct answer
-                wordEl.classList.remove('incorrect');
-                wordEl.classList.add('correct');
-                wordEl.setAttribute('draggable', 'false'); // Lock correct answers
-                
-                // Check if all are complete
-                checkAllComplete();
+            if (questionsData.find(q => q.id === qNode.dataset.id).matchId === aNode.dataset.id) {
+                playSFX('correct'); qNode.classList.add('connected'); aNode.classList.add('connected');
+                tempLine.classList.replace('line-temp', 'line-correct');
+                const gameRect = gameArea.getBoundingClientRect();
+                const qRect = qNode.getBoundingClientRect(); const aRect = aNode.getBoundingClientRect();
+                tempLine.setAttribute('x1', qRect.left - gameRect.left + (qRect.width / 2)); tempLine.setAttribute('y1', qRect.top - gameRect.top + (qRect.height / 2));
+                tempLine.setAttribute('x2', aRect.left - gameRect.left + (aRect.width / 2)); tempLine.setAttribute('y2', aRect.top - gameRect.top + (aRect.height / 2));
+                connections.push({ qId: qNode.dataset.id, aId: aNode.dataset.id, line: tempLine });
+                completedPairs++;
+                if (completedPairs === questionsData.length) setTimeout(showVictory, 500);
             } else {
-                // Incorrect answer
-                wordEl.classList.remove('correct');
-                
-                // Trigger shake animation and visual feedback
-                wordEl.classList.add('incorrect');
-                
-                // Keep it in the zone briefly so the user sees the error, then return it
-                setTimeout(() => {
-                    wordEl.classList.remove('incorrect');
-                    wordBankEl.appendChild(wordEl);
-                    updateZoneStates();
-                }, 800); // 800ms gives enough time for the shake animation to finish
+                playSFX('error'); tempLine.classList.replace('line-temp', 'line-error');
+                const gameRect = gameArea.getBoundingClientRect(); const targetRect = nodeB.getBoundingClientRect();
+                tempLine.setAttribute('x2', targetRect.left - gameRect.left + (targetRect.width / 2)); tempLine.setAttribute('y2', targetRect.top - gameRect.top + (targetRect.height / 2));
+                setTimeout(() => tempLine.remove(), 400);
             }
         }
 
-        function checkAllComplete() {
-            let correctCount = 0;
-            dropZones.forEach(zone => {
-                if (zone.children.length > 0 && zone.children[0].classList.contains('correct')) {
-                    correctCount++;
-                }
+        function initPractice2() {
+            p2Completed = 0;
+            const wordBank = document.getElementById('word-bank'); const sentencesList = document.getElementById('sentences-list');
+            wordBank.innerHTML = ''; sentencesList.innerHTML = '';
+
+            p2Words.forEach(word => {
+                const btn = document.createElement('div');
+                btn.className = "bg-white text-indigo-700 font-extrabold px-6 py-2 rounded-full shadow-md cursor-grab active:cursor-grabbing border-2 border-indigo-200 hover:border-indigo-400 hover:scale-105 transition-all touch-none select-none text-lg";
+                btn.textContent = word; btn.dataset.word = word;
+                wordBank.appendChild(btn); attachP2DragListeners(btn);
             });
 
-            if (correctCount === vocabWords.length) {
-                feedbackMsg.classList.remove('hidden', 'text-red-500', 'text-blue-600');
-                feedbackMsg.textContent = "🎉 Fantastic job! You got everything right!";
-                feedbackMsg.classList.add('text-green-600');
+            p2Sentences.forEach(sentence => {
+                const row = document.createElement('div'); row.className = "flex items-start gap-3 md:gap-4 leading-loose mb-2";
+                const contentDiv = document.createElement('div'); contentDiv.className = "flex-1 flex flex-wrap items-center gap-y-3";
+                
+                const numSpan = document.createElement('span'); numSpan.className = "font-bold text-indigo-500 min-w-[20px] pt-1"; numSpan.textContent = sentence.num;
+                
+                sentence.parts.forEach(part => {
+                    if (part.startsWith("BLANK_")) {
+                        const blankSpan = document.createElement('span');
+                        blankSpan.className = "p2-drop-zone inline-flex items-center justify-center min-w-[100px] h-[40px] mx-2 border-b-[3px] border-dashed border-gray-400 text-transparent transition-all duration-300 rounded bg-gray-50";
+                        blankSpan.dataset.answer = part.split("_")[1].toLowerCase();
+                        contentDiv.appendChild(blankSpan);
+                    } else {
+                        const textSpan = document.createElement('span'); textSpan.textContent = part; contentDiv.appendChild(textSpan);
+                    }
+                });
+                row.appendChild(numSpan); row.appendChild(contentDiv); sentencesList.appendChild(row);
+            });
+        }
+
+        function attachP2DragListeners(element) {
+            let ghost = null; let offsetX = 0; let offsetY = 0;
+            element.addEventListener('pointerdown', (e) => {
+                if(e.button !== 0 && e.type !== 'touchstart') return;
+                e.preventDefault(); ghost = element.cloneNode(true);
+                ghost.classList.remove('hover:border-indigo-400', 'hover:scale-105');
+                ghost.classList.add('absolute', 'z-[100]', 'pointer-events-none', 'scale-110', 'shadow-2xl', 'opacity-90', 'border-indigo-500');
+                document.body.appendChild(ghost);
+                const rect = element.getBoundingClientRect(); offsetX = e.clientX - rect.left; offsetY = e.clientY - rect.top;
+                moveGhost(e.clientX, e.clientY); element.setPointerCapture(e.pointerId);
+            });
+            element.addEventListener('pointermove', (e) => { if (ghost) moveGhost(e.clientX, e.clientY); });
+            element.addEventListener('pointerup', (e) => {
+                if (!ghost) return;
+                element.releasePointerCapture(e.pointerId);
+                ghost.style.display = 'none'; const target = document.elementFromPoint(e.clientX, e.clientY); ghost.style.display = 'flex';
+                const dropZone = target ? target.closest('.p2-drop-zone') : null;
+                
+                if (dropZone && !dropZone.classList.contains('filled')) checkP2Match(element.dataset.word, dropZone, e.clientX, e.clientY);
+                else {
+                    ghost.style.transition = 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                    const rect = element.getBoundingClientRect(); ghost.style.left = rect.left + 'px'; ghost.style.top = rect.top + 'px';
+                }
+                const currentGhost = ghost; setTimeout(() => { if(currentGhost && currentGhost.parentNode) currentGhost.remove(); }, 300);
+                ghost = null;
+            });
+            function moveGhost(x, y) { ghost.style.left = (x - offsetX) + 'px'; ghost.style.top = (y - offsetY) + 'px'; }
+        }
+
+        function checkP2Match(word, dropZone, clientX, clientY) {
+            if (word.toLowerCase() === dropZone.dataset.answer) {
+                playSFX('correct');
+                dropZone.classList.add('filled', 'bg-green-100', 'border-green-500', 'text-green-700', 'border-solid', 'font-bold', 'pop-in', 'px-3');
+                dropZone.classList.remove('border-dashed', 'border-gray-400', 'text-transparent', 'bg-gray-50');
+                dropZone.textContent = word.charAt(0).toUpperCase() + word.slice(1); // Auto capitalize
+                p2Completed++; if (p2Completed === p2TotalBlanks) setTimeout(showVictory, 600);
+            } else {
+                playSFX('error');
+                const wrongFeedback = document.createElement('div');
+                wrongFeedback.textContent = word; wrongFeedback.className = "fixed z-[100] text-red-600 font-bold px-4 py-2 rounded-lg bg-red-100 border-2 border-red-400 shadow-lg shake";
+                wrongFeedback.style.left = (clientX - 30) + 'px'; wrongFeedback.style.top = (clientY - 30) + 'px'; wrongFeedback.style.pointerEvents = 'none';
+                document.body.appendChild(wrongFeedback);
+                setTimeout(() => { wrongFeedback.style.transition = 'opacity 0.2s'; wrongFeedback.style.opacity = '0'; setTimeout(() => wrongFeedback.remove(), 200); }, 400);
             }
         }
 
-        function updateZoneStates() {
-            dropZones.forEach(zone => {
-                if (zone.children.length > 0) {
-                    zone.classList.add('has-word');
+        function initPractice3() {
+            const container = document.getElementById('conversation-list');
+            container.innerHTML = '';
+            
+            p3Conversation.forEach((line) => {
+                const row = document.createElement('div');
+                row.className = "flex gap-4 items-baseline";
+                
+                const speakerLabel = document.createElement('div');
+                speakerLabel.className = `font-extrabold min-w-[70px] text-right ${line.speaker === 'You' ? 'text-blue-700' : 'text-teal-700'}`;
+                speakerLabel.textContent = line.speaker + ":";
+                
+                const textDiv = document.createElement('div');
+                textDiv.className = "flex-1 leading-relaxed";
+                textDiv.innerHTML = line.text;
+                
+                row.appendChild(speakerLabel);
+                row.appendChild(textDiv);
+                container.appendChild(row);
+            });
+            
+            // Reset answer state
+            isP3Revealed = false;
+            document.getElementById('ans-btn').textContent = "ANS";
+            document.getElementById('ans-btn').classList.remove('bg-green-500', 'border-green-700');
+            document.getElementById('ans-btn').classList.add('bg-red-500', 'border-red-700');
+        }
+
+        function toggleP3Answers() {
+            const blanks = document.querySelectorAll('.p3-blank');
+            const btn = document.getElementById('ans-btn');
+            
+            isP3Revealed = !isP3Revealed;
+            
+            blanks.forEach(blank => {
+                if (isP3Revealed) {
+                    blank.classList.add('revealed');
                 } else {
-                    zone.classList.remove('has-word');
+                    blank.classList.remove('revealed');
                 }
             });
+
+            if (isP3Revealed) {
+                btn.textContent = "HIDE";
+                btn.classList.remove('bg-red-500', 'border-red-700');
+                btn.classList.add('bg-green-500', 'border-green-700');
+                playSFX('pop');
+            } else {
+                btn.textContent = "ANS";
+                btn.classList.remove('bg-green-500', 'border-green-700');
+                btn.classList.add('bg-red-500', 'border-red-700');
+            }
         }
 
-        // --- CHECKING ANSWERS ---
-        // Manual check button logic removed as it's now automated
+        function revealSingle(element) {
+            // Allows teacher to click a single blank to reveal it individually
+            element.classList.toggle('revealed');
+            playSFX('pop');
+        }
 
-        // Reset Button
-        resetBtn.addEventListener('click', initGame);
+        function switchTab(tabId) {
+            currentActiveTab = tabId;
+            const sections = { p1: document.getElementById('section-p1'), p2: document.getElementById('section-p2'), p3: document.getElementById('section-p3') };
+            const tabs = { p1: document.getElementById('tab-p1'), p2: document.getElementById('tab-p2'), p3: document.getElementById('tab-p3') };
+            const mainContainer = document.querySelector('main');
 
-        // Run setup on load
-        window.onload = initGame;
+            // Hide all
+            Object.values(sections).forEach(s => s.classList.add('hidden'));
+            
+            // Reset Tab styles to inactive
+            Object.values(tabs).forEach(t => {
+                t.className = "flex-1 py-3 md:py-4 px-2 md:px-4 bg-gray-200 text-gray-500 font-extrabold text-sm md:text-xl rounded-t-2xl shadow-inner transition-all hover:bg-gray-300 cursor-pointer";
+            });
+
+            // Activate chosen tab
+            sections[tabId].classList.remove('hidden');
+            
+            if (tabId === 'p1') {
+                tabs.p1.className = "flex-1 py-3 md:py-4 px-2 md:px-4 bg-blue-500 text-white font-extrabold text-sm md:text-xl rounded-t-2xl shadow-md transition-all";
+                mainContainer.className = "w-full max-w-5xl bg-white rounded-3xl shadow-xl border-4 border-blue-200 relative overflow-hidden z-20 rounded-tl-none";
+                initGame();
+            } else if (tabId === 'p2') {
+                tabs.p2.className = "flex-1 py-3 md:py-4 px-2 md:px-4 bg-indigo-500 text-white font-extrabold text-sm md:text-xl rounded-t-2xl shadow-md transition-all";
+                mainContainer.className = "w-full max-w-5xl bg-white rounded-3xl shadow-xl border-4 border-indigo-200 relative overflow-hidden z-20 rounded-tl-none md:rounded-tl-3xl";
+                initPractice2();
+            } else if (tabId === 'p3') {
+                tabs.p3.className = "flex-1 py-3 md:py-4 px-2 md:px-4 bg-teal-500 text-white font-extrabold text-sm md:text-xl rounded-t-2xl shadow-md transition-all";
+                mainContainer.className = "w-full max-w-5xl bg-white rounded-3xl shadow-xl border-4 border-teal-200 relative overflow-hidden z-20 rounded-tr-none";
+                initPractice3();
+            }
+        }
+
+        function showVictory() {
+            playSFX('win');
+            const modal = document.getElementById('victory-modal'); const content = document.getElementById('victory-content');
+            modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-0'); content.classList.add('scale-100'); }, 10);
+        }
+
+        function resetGame() {
+            const modal = document.getElementById('victory-modal'); const content = document.getElementById('victory-content');
+            content.classList.remove('scale-100'); content.classList.add('scale-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                if (currentActiveTab === 'p1') initGame();
+                else if (currentActiveTab === 'p2') initPractice2();
+            }, 300);
+        }
+
+        window.addEventListener('resize', () => {
+            const gameArea = document.getElementById('game-area');
+            if (currentActiveTab !== 'p1' || !gameArea) return;
+            const gameRect = gameArea.getBoundingClientRect();
+            connections.forEach(conn => {
+                const qNode = document.getElementById(`node-${conn.qId}`); const aNode = document.getElementById(`node-${conn.aId}`);
+                if (qNode && aNode) {
+                    const qRect = qNode.getBoundingClientRect(); const aRect = aNode.getBoundingClientRect();
+                    conn.line.setAttribute('x1', qRect.left - gameRect.left + (qRect.width / 2)); conn.line.setAttribute('y1', qRect.top - gameRect.top + (qRect.height / 2));
+                    conn.line.setAttribute('x2', aRect.left - gameRect.left + (aRect.width / 2)); conn.line.setAttribute('y2', aRect.top - gameRect.top + (aRect.height / 2));
+                }
+            });
+        });
+
+        window.onload = () => switchTab('p1');
     </script>
 </body>
 </html>
